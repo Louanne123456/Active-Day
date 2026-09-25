@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Planner personnalisable</title>
+  <style>
+    :root {
+      --primary: #4f46e5;
+      --primary-dark: #3730a3;
+      --bg: #f3f4f6;
+      --panel: #ffffff;
+      --border: #e5e7eb;
+      --text: #111827;
+      --muted: #6b7280;
+      --danger: #dc2626;
+      --success: #059669;
+      --dark: #111827;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    button, input, select, textarea {
+      font: inherit;
+    }
+    button { cursor: pointer; }
+
+    .app {
+      min-height: 100vh;
+      display: flex;
+    }
+
+    .sidebar {
+      width: 260px;
+      min-height: 100vh;
+      background: var(--dark);
+      color: white;
+      padding: 24px 18px;
+    }
+
+    .logo {
+      font-weight: 700;
+      font-size: 22px;
+      margin-bottom: 30px;
+    }
+
+    .sidebar h3 {
+      color: #9ca3af;
+      font-size: 12px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin: 20px 10px 10px;
+    }
+
+    .calendar-menu {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .calendar-menu button {
+      width: 100%;
+      background: transparent;
+      color: #d1d5db;
+      text-align: left;
+      border-radius: 8px;
+      padding: 11px 12px;
+      border: none;
+    }
+
+    .calendar-menu button:hover,
+    .calendar-menu button.active {
+      background: #374151;
+      color: white;
+    }
+
+    .main {
+      flex: 1;
+      max-width: 1500px;
+      margin: 0 auto;
+      padding: 28px;
+      width: 100%;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+
+    h1, h2, h3, p { margin-top: 0; }
+    h1 { font-size: 30px; margin-bottom: 6px; }
+    .subtitle { margin: 0; color: var(--muted); }
+
+    .button {
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 15px;
+      font-weight: 700;
+    }
+
+    .button:hover { background: var(--primary-dark); }
+    .button.secondary {
+      background: #e5e7eb;
+      color: var(--text);
+    }
+    .button.secondary:hover { background: #d1d5db; }
+    .button.danger { background: var(--danger); }
+    .button.small {
+      padding: 7px 10px;
+      font-size: 13px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 18px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tab {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      padding: 12px 16px;
+      border-bottom: 3px solid transparent;
+    }
+
+    .tab.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+      font-weight: 700;
+    }
+
+    .view { display: none; }
+    .view.active { display: block; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 20px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      padding: 20px;
+    }
+
+    .span-5 { grid-column: span 5; }
+    .span-7 { grid-column: span 7; }
+    .span-12 { grid-column: span 12; }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      color: #374151;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid #d1d5db;
+      border-radius: 7px;
+      padding: 10px 11px;
+      background: white;
+    }
+
+    textarea { min-height: 70px; resize: vertical; }
+
+    .form-group { margin-bottom: 15px; }
+    .form-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .criteria-row {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr 1.5fr auto;
+      gap: 8px;
+      align-items: end;
+      margin-bottom: 10px;
+    }
+
+    .criteria-row .form-group { margin-bottom: 0; }
+
+    .cards-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 14px;
+    }
+
+    .card-item {
+      padding: 16px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fafafa;
+    }
+
+    .card-item h3 { margin-bottom: 8px; }
+    .card-description {
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+
+    .field-list {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      margin-bottom: 14px;
+    }
+
+    .field-value {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 5px 0;
+      border-bottom: 1px solid #e5e7eb;
+      font-size: 14px;
+    }
+
+    .field-value strong { color: #374151; }
+
+    .card-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .planning-controls {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      align-items: end;
+    }
+
+    .planning-controls .form-group { margin-bottom: 0; }
+
+    .calendar-board {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(140px, 1fr));
+      gap: 10px;
+      overflow-x: auto;
+    }
+
+    .day-column {
+      min-height: 230px;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      background: #f9fafb;
+    }
+
+    .day-header {
+      text-align: center;
+      font-weight: 700;
+      padding-bottom: 10px;
+      margin-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .planning-card {
+      background: var(--primary);
+      color: white;
+      border-radius: 8px;
+      padding: 11px;
+      margin-bottom: 8px;
+    }
+
+    .planning-card.locked {
+      background: var(--success);
+    }
+
+    .planning-card strong {
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    .planning-card small {
+      display: block;
+      margin-bottom: 7px;
+      opacity: .9;
+    }
+
+    .planning-card button {
+      padding: 4px 7px;
+      border-radius: 5px;
+      border: none;
+      color: white;
+      background: rgba(255,255,255,.18);
+      font-size: 12px;
+      margin-right: 6px;
+    }
+
+    .empty {
+      text-align: center;
+      color: var(--muted);
+      padding: 28px;
+      border: 1px dashed #cbd5e1;
+      border-radius: 8px;
+    }
+
+    .notice {
+      background: #dbeafe;
+      color: #1e3a8a;
+      padding: 12px 14px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+    }
+
+    .toast {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      background: #111827;
+      color: white;
+      border-radius: 8px;
+      padding: 13px 17px;
+      display: none;
+      box-shadow: 0 5px 20px rgba(0,0,0,.2);
+      z-index: 1000;
+    }
+
+    @media (max-width: 1000px) {
+      .sidebar { width: 220px; }
+      .span-5, .span-7 { grid-column: span 12; }
+      .planning-controls { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 700px) {
+      .app { display: block; }
+      .sidebar { width: 100%; min-height: auto; }
+      .main { padding: 16px; }
+      .topbar { flex-direction: column; align-items: flex-start; }
+      .planning-controls { grid-template-columns: 1fr; }
+      .criteria-row { grid-template-columns: 1fr; }
+      .calendar-board { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="logo">Planner universel</div>
+
+      <button class="button" style="width:100%;" onclick="createCalendar()">
+        + Nouveau calendrier
+      </button>
+
+      <div>
+        <h3>Mes calendriers</h3>
+        <div id="calendarMenu" class="calendar-menu"></div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div>
+          <h1 id="pageTitle">Mon planner</h1>
+          <p class="subtitle">Créez vos cartes, définissez vos critères et générez votre planning.</p>
+        </div>
+
+        <button class="button secondary" onclick="resetApplication()">
+          Réinitialiser
+        </button>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" data-view="planning" onclick="showView('planning', this)">Planning</button>
+        <button class="tab" data-view="cards" onclick="showView('cards', this)">Mes cartes</button>
+        <button class="tab" data-view="settings" onclick="showView('settings', this)">Calendrier</button>
+      </div>
+
+      <section id="planning" class="view active">
+        <div class="panel">
+          <h2>Générer un planning</h2>
+          <div class="notice">
+            Les activités sont choisies parmi les cartes du calendrier actif.
+          </div>
+
+          <div class="planning-controls">
+            <div class="form-group">
+              <label for="activityCount">Nombre d'activités</label>
+              <input id="activityCount" type="number" min="1" max="7" value="4" />
+            </div>
+
+            <div class="form-group">
+              <label for="minDuration">Durée minimale</label>
+              <input id="minDuration" type="number" min="0" value="0" />
+            </div>
+
+            <div class="form-group">
+              <label for="maxDuration">Durée maximale</label>
+              <input id="maxDuration" type="number" min="0" value="999" />
+            </div>
+
+            <div class="form-group">
+              <label for="intensityFilter">Intensité</label>
+              <select id="intensityFilter">
+                <option value="">Toutes</option>
+                <option value="Faible">Faible</option>
+                <option value="Moyenne">Moyenne</option>
+                <option value="Élevée">Élevée</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button class="button" onclick="generatePlanning()">Générer le planning</button>
+            <button class="button secondary" onclick="clearPlanning()">Effacer le planning</button>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top:20px;">
+          <div style="display:flex; justify-content:space-between; gap:12px; align-items:center;">
+            <h2>Planning de la semaine</h2>
+            <span id="planningStatus" class="subtitle"></span>
+          </div>
+          <div id="calendarBoard" class="calendar-board"></div>
+        </div>
+      </section>
+
+      <section id="cards" class="view">
+        <div class="grid">
+          <div class="panel span-5">
+            <h2 id="cardFormTitle">Créer une carte</h2>
+
+            <form id="cardForm" onsubmit="saveCard(event)">
+              <input type="hidden" id="editingCardId" />
+
+              <div class="form-group">
+                <label for="cardName">Nom de la carte</label>
+                <input id="cardName" required placeholder="Exemple : Séance jambes" />
+              </div>
+
+              <div class="form-group">
+                <label for="cardDescription">Description</label>
+                <textarea id="cardDescription" placeholder="Description facultative"></textarea>
+              </div>
+
+              <h3>Critères personnalisés</h3>
+              <div id="criteriaContainer"></div>
+
+              <div class="form-actions">
+                <button type="button" class="button secondary" onclick="addCriterion()">+ Ajouter un critère</button>
+                <button type="submit" class="button">Enregistrer la carte</button>
+                <button type="button" class="button secondary" onclick="resetCardForm()">Annuler</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="panel span-7">
+            <h2>Mes cartes</h2>
+            <div id="cardsList" class="cards-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="settings" class="view">
+        <div class="grid">
+          <div class="panel span-5">
+            <h2>Calendrier actif</h2>
+
+            <div class="form-group">
+              <label for="calendarName">Nom du calendrier</label>
+              <input id="calendarName" placeholder="Exemple : Sport" />
+            </div>
+
+            <div class="form-actions">
+              <button class="button" onclick="renameCurrentCalendar()">Renommer</button>
+              <button class="button secondary" onclick="duplicateCurrentCalendar()">Dupliquer</button>
+              <button class="button danger" onclick="deleteCurrentCalendar()">Supprimer</button>
+            </div>
+          </div>
+
+          <div class="panel span-7">
+            <h2>À propos de ce prototype</h2>
+            <p>Cette version fonctionne entièrement dans le navigateur et est prête à être utilisée sur un ordinateur.</p>
+            <p>Les données sont stockées localement dans le navigateur. Elle est pensée comme prototype de démonstration.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    const STORAGE_KEY = 'active-day-planner';
+    const DAYS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+
+    function createId() {
+      return Date.now().toString(36) + Math.random().toString(36).slice(2);
+    }
+
+    function defaultState() {
+      const calendarId = createId();
+      return {
+        currentCalendarId: calendarId,
+        calendars: [{
+          id: calendarId,
+          name: 'Sport',
+          cards: [
+            {
+              id: createId(),
+              name: 'Séance jambes',
+              description: 'Entraînement musculaire',
+              fields: [
+                { key: 'Durée', type: 'number', value: '45' },
+                { key: 'Intensité', type: 'select', value: 'Élevée' },
+                { key: 'Partie du corps', type: 'text', value: 'Jambes' },
+                { key: 'Localisation', type: 'text', value: 'Salle' }
+              ]
+            },
+            {
+              id: createId(),
+              name: 'Yoga',
+              description: 'Séance douce',
+              fields: [
+                { key: 'Durée', type: 'number', value: '30' },
+                { key: 'Intensité', type: 'select', value: 'Faible' },
+                { key: 'Partie du corps', type: 'text', value: 'Corps entier' },
+                { key: 'Localisation', type: 'text', value: 'Maison' }
+              ]
+            },
+            {
+              id: createId(),
+              name: 'Cardio',
+              description: 'Séance dynamique',
+              fields: [
+                { key: 'Durée', type: 'number', value: '40' },
+                { key: 'Intensité', type: 'select', value: 'Moyenne' },
+                { key: 'Partie du corps', type: 'text', value: 'Corps entier' },
+                { key: 'Localisation', type: 'text', value: 'Extérieur' }
+              ]
+            }
+          ],
+          planning: []
+        }]
+      };
+    }
+
+    function loadState() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        return saved ? JSON.parse(saved) : defaultState();
+      } catch (e) {
+        return defaultState();
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function getCurrentCalendar() {
+      return state.calendars.find(calendar => calendar.id === state.currentCalendarId);
+    }
+
+    function notify(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.style.display = 'block';
+      setTimeout(() => toast.style.display = 'none', 2200);
+    }
+
+    function render() {
+      renderCalendarMenu();
+      renderCards();
+      renderPlanning();
+      renderCalendarSettings();
+    }
+
+    function renderCalendarMenu() {
+      const menu = document.getElementById('calendarMenu');
+      menu.innerHTML = '';
+
+      state.calendars.forEach(calendar => {
+        const btn = document.createElement('button');
+        btn.textContent = calendar.name;
+        if (calendar.id === state.currentCalendarId) btn.classList.add('active');
+        btn.onclick = () => {
+          state.currentCalendarId = calendar.id;
+          saveState();
+          render();
+          notify('Calendrier sélectionné');
+        };
+        menu.appendChild(btn);
+      });
+
+      const calendar = getCurrentCalendar();
+      document.getElementById('pageTitle').textContent = calendar ? calendar.name : 'Mon planner';
+    }
+
+    function renderCards() {
+      const list = document.getElementById('cardsList');
+      const calendar = getCurrentCalendar();
+
+      if (!calendar || calendar.cards.length === 0) {
+        list.innerHTML = '<div class="empty">Aucune carte dans ce calendrier.</div>';
+        return;
+      }
+
+      list.innerHTML = calendar.cards.map(card => {
+        const fields = card.fields.map(field => `
+          <div class="field-value">
+            <strong>${escapeHtml(field.key)}</strong>
+            <span>${escapeHtml(field.value)}</span>
+          </div>
+        `).join('');
+
+        return `
+          <article class="card-item">
+            <h3>${escapeHtml(card.name)}</h3>
+            <div class="card-description">${escapeHtml(card.description || 'Aucune description')}</div>
+            <div class="field-list">${fields}</div>
+            <div class="card-actions">
+              <button type="button" class="button small secondary" onclick="editCard('${card.id}')">Modifier</button>
+              <button type="button" class="button small danger" onclick="deleteCard('${card.id}')">Supprimer</button>
+            </div>
+          </article>
+        `;
+      }).join('');
+    }
+
+    function renderPlanning() {
+      const board = document.getElementById('calendarBoard');
+      const calendar = getCurrentCalendar();
+      if (!calendar) {
+        board.innerHTML = '<div class="empty">Aucun calendrier actif.</div>';
+        return;
+      }
+
+      const entries = calendar.planning || [];
+
+      board.innerHTML = DAYS.map(day => {
+        const dayEntries = entries.filter(entry => entry.day === day);
+        return `
+          <div class="day-column">
+            <div class="day-header">${day}</div>
+            ${dayEntries.length ? dayEntries.map(renderPlanningCard).join('') : '<div class="empty">Repos</div>'}
+          </div>
+        `;
+      }).join('');
+
+      document.getElementById('planningStatus').textContent =
+        entries.length ? `${entries.length} activité(s) planifiée(s)` : 'Aucun planning généré';
+    }
+
+    function renderPlanningCard(entry) {
+      const calendar = getCurrentCalendar();
+      const card = calendar.cards.find(item => item.id === entry.cardId);
+      if (!card) return '';
+
+      const duration = getFieldValue(card, ['Durée', 'duration']);
+      const intensity = getFieldValue(card, ['Intensité', 'intensity']);
+
+      return `
+        <div class="planning-card ${entry.locked ? 'locked' : ''}">
+          <strong>${escapeHtml(card.name)}</strong>
+          <small>${duration ? escapeHtml(duration) + ' min' : ''}${intensity ? ' · ' + escapeHtml(intensity) : ''}</small>
+          <button type="button" onclick="toggleLock('${entry.id}')">${entry.locked ? 'Déverrouiller' : 'Verrouiller'}</button>
+          <button type="button" onclick="removePlanningEntry('${entry.id}')">Retirer</button>
+        </div>
+      `;
+    }
+
+    function renderCalendarSettings() {
+      const calendar = getCurrentCalendar();
+      document.getElementById('calendarName').value = calendar ? calendar.name : '';
+    }
+
+    function showView(viewId, button) {
+      document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+      document.getElementById(viewId).classList.add('active');
+      if (button) button.classList.add('active');
+    }
+
+    function createCalendar() {
+      const name = prompt('Nom du nouveau calendrier :');
+      if (!name || !name.trim()) return;
+
+      const calendar = {
+        id: createId(),
+        name: name.trim(),
+        cards: [],
+        planning: []
+      };
+
+      state.calendars.push(calendar);
+      state.currentCalendarId = calendar.id;
+      saveState();
+      render();
+      notify('Calendrier créé');
+    }
+
+    function renameCurrentCalendar() {
+      const calendar = getCurrentCalendar();
+      if (!calendar) return;
+
+      const name = document.getElementById('calendarName').value.trim();
+      if (!name) {
+        notify('Veuillez saisir un nom');
+        return;
+      }
+
+      calendar.name = name;
+      saveState();
+      render();
+      notify('Calendrier renommé');
+    }
+
+    function duplicateCurrentCalendar() {
+      const calendar = getCurrentCalendar();
+      if (!calendar) return;
+
+      const copy = JSON.parse(JSON.stringify(calendar));
+      copy.id = createId();
+      copy.name = calendar.name + ' - Copie';
+      copy.cards.forEach(card => card.id = createId());
+      copy.planning = [];
+
+      state.calendars.push(copy);
+      state.currentCalendarId = copy.id;
+      saveState();
+      render();
+      notify('Calendrier dupliqué');
+    }
+
+    function deleteCurrentCalendar() {
+      if (state.calendars.length <= 1) {
+        notify('Vous devez conserver au moins un calendrier');
+        return;
+      }
+
+      const calendar = getCurrentCalendar();
+      if (!calendar) return;
+      if (!confirm(`Supprimer le calendrier "${calendar.name}" ?`)) return;
+
+      state.calendars = state.calendars.filter(item => item.id !== calendar.id);
+      state.currentCalendarId = state.calendars[0].id;
+      saveState();
+      render();
+      notify('Calendrier supprimé');
+    }
+
+    function addCriterion(data = {}) {
+      const container = document.getElementById('criteriaContainer');
+      const row = document.createElement('div');
+      row.className = 'criteria-row';
+      row.innerHTML = `
+        <div class="form-group">
+          <label>Nom du critère</label>
+          <input class="criterion-key" value="${escapeAttribute(data.key || '')}" placeholder="Exemple : Durée" />
+        </div>
+        <div class="form-group">
+          <label>Type</label>
+          <select class="criterion-type">
+            <option value="text" ${data.type === 'text' ? 'selected' : ''}>Texte</option>
+            <option value="number" ${data.type === 'number' ? 'selected' : ''}>Nombre</option>
+            <option value="select" ${data.type === 'select' ? 'selected' : ''}>Choix</option>
+            <option value="boolean" ${data.type === 'boolean' ? 'selected' : ''}>Oui / Non</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Valeur</label>
+          <input class="criterion-value" value="${escapeAttribute(data.value || '')}" placeholder="Exemple : 45" />
+        </div>
+        <button type="button" class="button danger small" onclick="this.parentElement.remove()">Supprimer</button>
+      `;
+      container.appendChild(row);
+    }
+
+    function saveCard(event) {
+      event.preventDefault();
+
+      const calendar = getCurrentCalendar();
+      if (!calendar) return;
+
+      const name = document.getElementById('cardName').value.trim();
+      const description = document.getElementById('cardDescription').value.trim();
+      if (!name) {
+        notify('Le nom de la carte est obligatoire');
+        return;
+      }
+
+      const keys = [...document.querySelectorAll('.criterion-key')].map(el => el.value.trim());
+      const types = [...document.querySelectorAll('.criterion-type')].map(el => el.value);
+      const values = [...document.querySelectorAll('.criterion-value')].map(el => el.value.trim());
+
+      const fields = keys.map((key, index) => ({
+        key,
+        type: types[index],
+        value: values[index]
+      })).filter(field => field.key);
+
+      const editingId = document.getElementById('editingCardId').value;
+
+      if (editingId) {
+        const card = calendar.cards.find(item => item.id === editingId);
+        if (card) {
+          card.name = name;
+          card.description = description;
+          card.fields = fields;
+        }
+        notify('Carte modifiée');
+      } else {
+        calendar.cards.push({
+          id: createId(),
+          name,
+          description,
+          fields
+        });
+        notify('Carte créée');
+      }
+
+      saveState();
+      resetCardForm();
+      render();
+    }
+
+    function editCard(cardId) {
+      const calendar = getCurrentCalendar();
+      const card = calendar.cards.find(item => item.id === cardId);
+      if (!card) return;
+
+      document.getElementById('editingCardId').value = card.id;
+      document.getElementById('cardName').value = card.name;
+      document.getElementById('cardDescription').value = card.description || '';
+      document.getElementById('cardFormTitle').textContent = 'Modifier la carte';
+
+      const container = document.getElementById('criteriaContainer');
+      container.innerHTML = '';
+      card.fields.forEach(field => addCriterion(field));
+
+      showView('cards', document.querySelector('[data-view="cards"]'));
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function deleteCard(cardId) {
+      const calendar = getCurrentCalendar();
+      const card = calendar.cards.find(item => item.id === cardId);
+      if (!card) return;
+      if (!confirm(`Supprimer la carte "${card.name}" ?`)) return;
+
+      calendar.cards = calendar.cards.filter(item => item.id !== cardId);
+      calendar.planning = calendar.planning.filter(entry => entry.cardId !== cardId);
+      saveState();
+      render();
+      notify('Carte supprimée');
+    }
+
+    function resetCardForm() {
+      document.getElementById('cardForm').reset();
+      document.getElementById('editingCardId').value = '';
+      document.getElementById('cardFormTitle').textContent = 'Créer une carte';
+      document.getElementById('criteriaContainer').innerHTML = '';
+      addCriterion({ key: 'Durée', type: 'number', value: '' });
+      addCriterion({ key: 'Intensité', type: 'select', value: '' });
+    }
+
+    function generatePlanning() {
+      const calendar = getCurrentCalendar();
+      if (!calendar) return;
+
+      const count = Number(document.getElementById('activityCount').value) || 1;
+      const minDuration = Number(document.getElementById('minDuration').value) || 0;
+      const maxDuration = Number(document.getElementById('maxDuration').value) || 999;
+      const intensity = document.getElementById('intensityFilter').value;
+
+      const candidates = calendar.cards.filter(card => {
+        const duration = Number(getFieldValue(card, ['Durée', 'duration']) || 0);
+        const cardIntensity = getFieldValue(card, ['Intensité', 'intensity']);
+
+        const inDuration = duration >= minDuration && duration <= maxDuration;
+        const inIntensity = !intensity || cardIntensity === intensity;
+        return inDuration && inIntensity;
+      });
+
+      if (candidates.length === 0) {
+        notify('Aucune carte ne correspond aux filtres');
+        return;
+      }
+
+      const locked = (calendar.planning || []).filter(entry => entry.locked);
+      const usedIds = locked.map(entry => entry.cardId);
+      const slots = DAYS.filter(day => !locked.some(entry => entry.day === day));
+
+      const randomPool = [...candidates].filter(card => !usedIds.includes(card.id)).sort(() => Math.random() - 0.5);
+      const newEntries = [...locked];
+
+      for (let i = 0; i < randomPool.length && newEntries.length < count; i++) {
+        if (!slots[i]) break;
+        newEntries.push({
+          id: createId(),
+          cardId: randomPool[i].id,
+          day: slots[i],
+          locked: false
+        });
+      }
+
+      calendar.planning = newEntries;
+      saveState();
+      render();
+      notify('Planning généré');
+    }
+
+    function toggleLock(entryId) {
+      const calendar = getCurrentCalendar();
+      const entry = calendar.planning.find(item => item.id === entryId);
+      if (!entry) return;
+      entry.locked = !entry.locked;
+      saveState();
+      render();
+    }
+
+    function removePlanningEntry(entryId) {
+      const calendar = getCurrentCalendar();
+      calendar.planning = calendar.planning.filter(entry => entry.id !== entryId);
+      saveState();
+      render();
+      notify('Activité retirée');
+    }
+
+    function clearPlanning() {
+      const calendar = getCurrentCalendar();
+      if (!calendar) return;
+      calendar.planning = (calendar.planning || []).filter(entry => entry.locked);
+      saveState();
+      render();
+      notify('Planning nettoyé');
+    }
+
+    function getFieldValue(card, possibleKeys) {
+      const field = card.fields.find(item =>
+        possibleKeys.some(key => item.key.toLowerCase() === key.toLowerCase())
+      );
+      return field ? field.value : '';
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function escapeAttribute(value) {
+      return escapeHtml(value);
+    }
+
+    function resetApplication() {
+      if (!confirm('Supprimer toutes les données enregistrées ?')) return;
+      localStorage.removeItem(STORAGE_KEY);
+      state = defaultState();
+      saveState();
+      resetCardForm();
+      render();
+      notify('Application réinitialisée');
+    }
+
+    let state = loadState();
+    resetCardForm();
+    render();
+  </script>
+</body>
+</html>
